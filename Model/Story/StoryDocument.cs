@@ -2,7 +2,7 @@
 using MongoDB.Bson.Serialization.Attributes;
 using System;
 
-namespace StoryBot.Model
+namespace StoryBot.Core.Model
 {
     public class StoryDocument
     {

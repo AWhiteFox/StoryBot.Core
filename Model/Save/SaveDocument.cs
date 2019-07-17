@@ -3,7 +3,7 @@ using MongoDB.Bson.Serialization.Attributes;
 using System;
 using System.Collections.Generic;
 
-namespace StoryBot.Model
+namespace StoryBot.Core.Model
 {
     public class SaveDocument
     {

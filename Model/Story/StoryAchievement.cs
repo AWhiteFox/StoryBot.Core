@@ -1,7 +1,7 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace StoryBot.Model
+namespace StoryBot.Core.Model
 {
     public class StoryAchievement
     {
