@@ -6,11 +6,20 @@ using System.Text;
 
 namespace StoryBot.Core.Logging
 {
+    /// <summary>
+    /// NLog target to logging into Discord Webhook
+    /// </summary>
     [Target("Discord")]
     public sealed class NLogTargetDiscord : TargetWithLayout
     {
+        /// <summary>
+        /// Webhook
+        /// </summary>
         private readonly DiscordWebhook discord;
 
+        /// <summary>
+        /// Default constructor
+        /// </summary>
         public NLogTargetDiscord()
         {
             discord = new DiscordWebhook(Environment.GetEnvironmentVariable("DISCORD_WEBHOOKID"),
@@ -21,13 +30,13 @@ namespace StoryBot.Core.Logging
         {
             if (logEvent.Exception != null)
             {
-                string[] splitted = logEvent.Exception.ToString().Split(System.Environment.NewLine);
+                string[] lines = logEvent.Exception.ToString().Split(Environment.NewLine);
 
                 StringBuilder stringBuilder = new StringBuilder();
                 List<string> sendingList = new List<string>();
-                foreach (string x in splitted)
+                foreach (string x in lines)
                 {
-                    if (stringBuilder.Length + x.Length < 2000)
+                    if (stringBuilder.Length + x.Length <= 2000)
                     {
                         stringBuilder.Append(x + "\n");
                     }

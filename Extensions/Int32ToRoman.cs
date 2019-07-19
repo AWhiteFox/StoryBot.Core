@@ -3,6 +3,9 @@ using System.Text;
 
 namespace StoryBot.Core.Extensions
 {
+    /// <summary>
+    /// Extension to convert <see cref="Int32"/> to Roman Numerals
+    /// </summary>
     public static class Int32ToRoman
     {
         public static readonly Dictionary<int, string> RomanNumerals;

@@ -28,6 +28,21 @@ namespace StoryBot.Core.Model
             this.StoriesStats = StoriesStats ?? new List<SaveStoryStats>();
         }
 
+        public SaveStoryStats GetStoryStats(int id)
+        {
+            var index = StoriesStats.FindIndex(x => x.StoryId == id);
+            if (index != -1)
+            {
+                return StoriesStats[index];
+            }
+            else
+            {
+                var stats = new SaveStoryStats(id);
+                StoriesStats.Add(stats);
+                return stats;
+            }
+        }
+
         public void AddEnding(int storyId, int episodeId, int endingId)
         {
             Current = new SaveProgress { Story = Current.Story };

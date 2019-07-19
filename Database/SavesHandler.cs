@@ -41,14 +41,19 @@ namespace StoryBot.Core.Logic
         }
 
         /// <summary>
-        /// Inserts SaveDocument to saves collection
+        /// Creates new SaveDocument in saves collection
         /// </summary>
         /// <param name="save"></param>
-        public void CreateNew(SaveDocument save)
+        public void CreateNew(long id)
         {
-            collection.InsertOne(save);
+            if (collection.CountDocuments(x => x.Id == id) == 0)
+                collection.InsertOne(new SaveDocument(id));
         }
 
+        /// <summary>
+        /// Updates existing save document
+        /// </summary>
+        /// <param name="save"></param>
         public void Update(SaveDocument save)
         {
             collection.ReplaceOne(Builders<SaveDocument>.Filter.Eq("id", save.Id), save);
