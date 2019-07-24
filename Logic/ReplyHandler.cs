@@ -179,6 +179,12 @@ namespace StoryBot.Core.Logic
         }
 
         /// <summary>
+        /// Sends command list
+        /// </summary>
+        /// <param name="userId"></param>
+        public void ReplyWithCommandList(long userId) => messageSender.Send(userId, messageBuilder.BuildCommandList());
+        
+        /// <summary>
         /// Sends error message
         /// </summary>
         /// <param name="userId"></param>
