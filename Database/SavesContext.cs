@@ -1,17 +1,14 @@
 ﻿using MongoDB.Driver;
 using StoryBot.Core.Abstractions;
 using StoryBot.Core.Model;
-using System;
 
 namespace StoryBot.Core.Logic
 {
-    public class SavesHandler : ISavesHandler
+    public class SavesContext : ISavesContext
     {
-        private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
-
         private readonly IMongoCollection<SaveDocument> collection;
 
-        public SavesHandler(IMongoCollection<SaveDocument> collection)
+        public SavesContext(IMongoCollection<SaveDocument> collection)
         {
             this.collection = collection;
         }
@@ -23,21 +20,7 @@ namespace StoryBot.Core.Logic
         /// <returns></returns>
         public SaveDocument Get(long id)
         {
-            var results = collection.Find(Builders<SaveDocument>.Filter.Eq("id", id));
-            try
-            {
-                return results.Single();
-            }
-            catch (InvalidOperationException)
-            {
-                if (results.CountDocuments() == 0)
-                {
-                    logger.Warn($"Save for {id} not found. Creating one...");
-                    collection.InsertOne(new SaveDocument(id));
-                    return Get(id);
-                }
-                else throw;
-            }
+            return collection.Find(Builders<SaveDocument>.Filter.Eq("id", id)).Single();
         }
 
         /// <summary>

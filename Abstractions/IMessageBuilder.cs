@@ -68,16 +68,20 @@ namespace StoryBot.Core.Abstractions
         /// <returns></returns>
         T BuildBeginningMessage();
         /// <summary>
+        /// Use this message when user select wrong number
+        /// </summary>
+        /// <returns></returns>
+        T BuildIndexOutOfRangeMessage();
+        /// <summary>
+        /// Error message
+        /// </summary>
+        /// <param name="exception"></param>
+        /// <returns></returns>
+        T BuildSomethingWentWrongMessage(string exception = null);
+        /// <summary>
         /// Command list
         /// </summary>
         /// <returns></returns>
         T BuildCommandList();
-
-        /// <summary>
-        /// Message with provided string
-        /// </summary>
-        /// <param name="str"></param>
-        /// <returns></returns>
-        T FromString(string str);
     }
 }

@@ -2,7 +2,7 @@
 
 namespace StoryBot.Core.Abstractions
 {
-    public interface ISavesHandler
+    public interface ISavesContext
     {
         void CreateNew(long id);
         SaveDocument Get(long id);

@@ -6,11 +6,11 @@ using System.Linq;
 
 namespace StoryBot.Core.Logic
 {
-    public class StoriesHandler : IStoriesHandler
+    public class StoriesContext : IStoriesContext
     {
         private readonly IMongoCollection<StoryDocument> collection;
 
-        public StoriesHandler(IMongoCollection<StoryDocument> collection)
+        public StoriesContext(IMongoCollection<StoryDocument> collection)
         {
             this.collection = collection;
         }

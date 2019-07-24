@@ -7,8 +7,6 @@ namespace StoryBot.Core.Model
 {
     public class SaveDocument
     {
-        private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
-
         [BsonId]
         public ObjectId ObjectId { get; set; }
 
@@ -50,11 +48,6 @@ namespace StoryBot.Core.Model
             int statsId = StoriesStats.FindIndex(x => x.StoryId == storyId);
             if (statsId == -1)
             {
-                // TEMP: Log if episode id != 0
-                if (episodeId != 0)
-                {
-                    logger.Warn($"Can't find {episodeId + 1} episodes in save {Id} in story {storyId}");
-                }
                 StoriesStats.Add(new SaveStoryStats(storyId, new List<SaveEpisodeStats>()));
 
                 if (!StoriesStats[0].Episodes[episodeId].ObtainedEndings.Contains(endingId))
@@ -70,17 +63,9 @@ namespace StoryBot.Core.Model
                 catch (ArgumentOutOfRangeException)
                 {
                     StoriesStats[statsId].Episodes.Add(new SaveEpisodeStats());
-                    // TEMP: try
-                    try
-                    {
-                        if (!StoriesStats[statsId].Episodes[episodeId].ObtainedEndings.Contains(endingId))
-                            StoriesStats[statsId].Episodes[episodeId].ObtainedEndings.Add(endingId);
-                    }
-                    catch (IndexOutOfRangeException)
-                    {
-                        logger.Error($"Error in episodes sequence in save {Id} in story {storyId}");
-                        throw;
-                    }
+
+                    if (!StoriesStats[statsId].Episodes[episodeId].ObtainedEndings.Contains(endingId))
+                        StoriesStats[statsId].Episodes[episodeId].ObtainedEndings.Add(endingId);
                 }
             }
         }
@@ -90,13 +75,8 @@ namespace StoryBot.Core.Model
             int statsId = StoriesStats.FindIndex(x => x.StoryId == storyId);
             if (statsId == -1)
             {
-                // TEMP: Log if episode id != 0
-                if (episodeId != 0)
-                {
-                    logger.Warn($"Can't find {episodeId + 1} episodes in save {Id} in story {storyId}");
-                }
-                StoriesStats.Add(new SaveStoryStats(storyId, new List<SaveEpisodeStats>()));
-                
+                StoriesStats.Add(new SaveStoryStats(storyId, new List<SaveEpisodeStats>())); 
+
                 if (!StoriesStats[0].Episodes[episodeId].ObtainedAchievements.Contains(achievementId))
                     StoriesStats[0].Episodes[episodeId].ObtainedAchievements.Add(achievementId);
             }
@@ -110,17 +90,9 @@ namespace StoryBot.Core.Model
                 catch (ArgumentOutOfRangeException)
                 {
                     StoriesStats[statsId].Episodes.Add(new SaveEpisodeStats());
-                    // TEMP: try
-                    try
-                    {
-                        if (!StoriesStats[statsId].Episodes[episodeId].ObtainedAchievements.Contains(achievementId))
-                            StoriesStats[statsId].Episodes[episodeId].ObtainedAchievements.Add(achievementId);
-                    }
-                    catch (IndexOutOfRangeException)
-                    {
-                        logger.Error($"Error in episodes sequence in save {Id} in story {storyId}");
-                        throw;
-                    }
+
+                    if (!StoriesStats[statsId].Episodes[episodeId].ObtainedAchievements.Contains(achievementId))
+                        StoriesStats[statsId].Episodes[episodeId].ObtainedAchievements.Add(achievementId);
                 }
             }
         }

@@ -5,17 +5,21 @@ using System.Linq;
 
 namespace StoryBot.Core.Logic
 {
-    public class ReplyHandler<T>
-    {
+    /// <summary>
+    /// Connects MessageBuilder and MessageSender
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class ReplyHandler<T> : IBotDefaultCommands
+    {       
         /// <summary>
         /// Gets stories
         /// </summary>
-        private readonly IStoriesHandler stories;
+        private readonly IStoriesContext stories;
 
         /// <summary>
         /// Gets and updates saves
         /// </summary>
-        private readonly ISavesHandler saves;
+        private readonly ISavesContext saves;
 
         /// <summary>
         /// Message generator
@@ -38,8 +42,8 @@ namespace StoryBot.Core.Logic
         /// <param name="vk"></param>
         /// <param name="stories"></param>
         /// <param name="saves"></param>
-        public ReplyHandler(IStoriesHandler stories,
-                            ISavesHandler saves,
+        public ReplyHandler(IStoriesContext stories,
+                            ISavesContext saves,
                             IMessageBuilder<T> messageBuilder,
                             IMessageSender<T> messageSender,
                             char prefix)
@@ -51,20 +55,20 @@ namespace StoryBot.Core.Logic
             this.Prefix = prefix;
         }
 
-        // Replies //
+        #region Replies
 
         /// <summary>
         /// Sends response to provided number
         /// </summary>
-        /// <param name="peerId"></param>
+        /// <param name="userId"></param>
         /// <param name="number"></param>
-        public void ReplyToNumber(long peerId, int number)
+        public void ReplyToNumber(long userId, int number)
         {
             // Try-catch block: if something goes wrong replies with "Index not found"
             try
             {
                 // Getting save
-                var save = saves.Get(peerId);
+                var save = saves.Get(userId);
 
                 if (save.Current.Story != null) // IF story already selected
                 {
@@ -84,10 +88,10 @@ namespace StoryBot.Core.Logic
                             save.AddEnding(story.StoryId, story.Episode, selectedOption.Position.Value);
 
                             // Send messages
-                            messageSender.Send(peerId, messageBuilder.BuildEnding(story, selectedOption.Position.Value));
+                            messageSender.Send(userId, messageBuilder.BuildEnding(story, selectedOption.Position.Value));
                             var episodes = stories.GetStoryEpisodes(story.StoryId);
                             var progress = save.GetStoryStats(story.StoryId);
-                            messageSender.Send(peerId, messageBuilder.BuildEpisodeSelectDialog(episodes, progress));
+                            messageSender.Send(userId, messageBuilder.BuildEpisodeSelectDialog(episodes, progress));
                         }
                         else // Default case
                         {
@@ -116,12 +120,12 @@ namespace StoryBot.Core.Logic
                                 // Add achievement to save stats
                                 save.AddAchievement(story.StoryId, story.Episode, selectedOption.Achievement.Value);
                                 // Edit response message
-                                messageSender.Send(peerId, messageBuilder.BuildAchievement(story.Achievements[selectedOption.Achievement.Value]));
+                                messageSender.Send(userId, messageBuilder.BuildAchievement(story.Achievements[selectedOption.Achievement.Value]));
                             }
 
                             // Send created message
                             var storylineElement = story.GetStoryline(save.Current.Storyline).Elements[save.Current.Position];
-                            messageSender.Send(peerId, messageBuilder.BuildContent(storylineElement, save.Current.Unlockables));
+                            messageSender.Send(userId, messageBuilder.BuildContent(storylineElement, save.Current.Unlockables));
                         }
                     }
                     else // From episode selection
@@ -138,7 +142,7 @@ namespace StoryBot.Core.Logic
                             save.Current.Position = 0;
 
                             // Send message
-                            messageSender.Send(peerId, messageBuilder.BuildContent(story.Storylines[0].Elements[0], save.Current.Unlockables));
+                            messageSender.Send(userId, messageBuilder.BuildContent(story.Storylines[0].Elements[0], save.Current.Unlockables));
                         }
                         else
                             goto IndexNotFound;
@@ -154,7 +158,7 @@ namespace StoryBot.Core.Logic
                     save.Current.Story = number;
 
                     // Send episode select dialog
-                    messageSender.Send(peerId, messageBuilder.BuildEpisodeSelectDialog(episodes, stats));
+                    messageSender.Send(userId, messageBuilder.BuildEpisodeSelectDialog(episodes, stats));
                 }
 
                 // Finally update save
@@ -171,137 +175,106 @@ namespace StoryBot.Core.Logic
             }
 
         IndexNotFound: // If something went wrong...
-            messageSender.Send(peerId, messageBuilder.FromString("Выберите вариант из представленных"));
+            messageSender.Send(userId, messageBuilder.BuildIndexOutOfRangeMessage());
         }
 
         /// <summary>
-        /// Sends response to provided command
+        /// Sends error message
         /// </summary>
-        /// <param name="peerId"></param>
-        /// <param name="command"></param>
-        public void ReplyToCommand(long peerId, string command)
-        {
-            // Try-catch: If something goes wrong send "Wrong command usage" message
-            try
-            {
-                // Split command to alias and arguments
-                string[] splittedCommand = command.Split(" ");
-                string alias = splittedCommand[0];
-                string[] args = splittedCommand.Skip(1).ToArray();
-
-                switch (alias)
-                {
-                    case "list":
-                        // Arguments length check...
-                        if (args.Length == 0)
-                        {
-                            // Send stories stats
-                            messageSender.Send(peerId,
-                                    messageBuilder.BuildStats(stories.GetAllPrologues(),
-                                    saves.Get(peerId).StoriesStats));
-                        }
-                        else if (args.Length == 1)
-                        {
-                            // Parse story ID from first argument
-                            var storyId = int.Parse(args[0]);
-                            // Send story episodes stats
-                            messageSender.Send(peerId,
-                                messageBuilder.BuildStoryStats(stories.GetStoryEpisodes(storyId),
-                                saves.Get(peerId).GetStoryStats(storyId).Episodes));
-                        }
-                        else if (args.Length == 2)
-                        {
-                            // Parse story ID from first argument
-                            var storyId = int.Parse(args[0]);
-                            // Parse episode ID from second argument
-                            var episodeId = int.Parse(args[1]);
-                            // Send episode stats
-                            messageSender.Send(peerId,
-                                messageBuilder.BuildEpisodeStats(stories.GetEpisode(storyId, episodeId),
-                                saves.Get(peerId).GetStoryStats(storyId).Episodes[episodeId]));
-                        }
-                        else
-                        {
-                            // Send command list
-                            messageSender.Send(peerId, messageBuilder.BuildCommandList());
-                        }
-                        break;
-                    case "repeat":
-                        {
-                            // Get save
-                            var save = saves.Get(peerId);
-                            if (save.Current.Story != null)
-                            {
-                                if (save.Current.Episode != null) // Default case
-                                {
-                                    var storylineElement = stories.GetEpisode(save.Current.Story.Value, save.Current.Episode.Value)
-                                        .GetStoryline(save.Current.Storyline).Elements[save.Current.Position];
-                                    messageSender.Send(peerId,
-                                        messageBuilder.BuildContent(storylineElement, save.Current.Unlockables));
-                                }
-                                else // Episode select
-                                {
-                                    var episodes = stories.GetStoryEpisodes(save.Current.Story.Value);
-                                    var stats = save.GetStoryStats(save.Current.Story.Value);
-
-                                    messageSender.Send(peerId,
-                                        messageBuilder.BuildEpisodeSelectDialog(episodes, stats));
-                                }
-                            }
-                            else // Story select
-                            {
-                                messageSender.Send(peerId, messageBuilder.BuildStorySelectDialog(stories.GetAllPrologues()));
-                            }
-                        }
-                        return;
-                    case "select":
-                        {
-                            // Reset progress
-                            var save = saves.Get(peerId);
-                            save.Current = new SaveProgress();
-                            saves.Update(save);
-
-                            // Send story select dialog
-                            messageSender.Send(peerId, messageBuilder.BuildStorySelectDialog(stories.GetAllPrologues()));
-                            return;
-                        }
-                    default:
-                        {
-                            // Send command list if command not found
-                            messageSender.Send(peerId, messageBuilder.BuildCommandList());
-                            return;
-                        }
-                }
-            }
-            catch (Exception)
-            {
-                messageSender.Send(peerId, messageBuilder.FromString("Неправильное использование команды."));
-            }
-        }
+        /// <param name="userId"></param>
+        /// <param name="message"></param>
+        public void ReplyWithError(long userId, string message = null) => messageSender.Send(userId, messageBuilder.BuildSomethingWentWrongMessage(message));
 
         /// <summary>
-        /// Sends message with string
+        /// Sends Index Out Of Range message
         /// </summary>
-        /// <param name="peerId"></param>
-        /// <param name="str"></param>
-        public void ReplyWithString(long peerId, string str)
-        {
-            messageSender.Send(peerId, messageBuilder.FromString(str));
-        }
+        /// <param name="userId"></param>
+        public void ReplyWithIndexOutOfRange(long userId) => messageSender.Send(userId, messageBuilder.BuildIndexOutOfRangeMessage());
 
         /// <summary>
         /// Used when user starts conversation with bot
         /// </summary>
-        /// <param name="peerId"></param>
-        public void ReplyToTheFirstMessage(long peerId)
+        /// <param name="userId"></param>
+        public void ReplyToTheFirstMessage(long userId)
         {
             // Create new save
-            saves.CreateNew(peerId);
+            saves.CreateNew(userId);
 
             // Send messages
-            messageSender.Send(peerId, messageBuilder.BuildBeginningMessage());
-            messageSender.Send(peerId, messageBuilder.BuildCommandList());
+            messageSender.Send(userId, messageBuilder.BuildBeginningMessage());
+            messageSender.Send(userId, messageBuilder.BuildCommandList());
+            messageSender.Send(userId, messageBuilder.BuildStorySelectDialog(stories.GetAllPrologues()));
+        }
+
+        #endregion
+
+        #region Default Bot Commands
+
+        public IBotDefaultCommands Commands { get { return this; } }
+
+        void IBotDefaultCommands.List(long peerId)
+        {
+            // Send stories stats
+            messageSender.Send(peerId,
+                messageBuilder.BuildStats(stories.GetAllPrologues(),
+                saves.Get(peerId).StoriesStats));
+        }
+
+        void IBotDefaultCommands.List(long peerId, int storyId)
+        {
+            // Send story episodes stats
+            messageSender.Send(peerId,
+                messageBuilder.BuildStoryStats(stories.GetStoryEpisodes(storyId),
+                saves.Get(peerId).GetStoryStats(storyId).Episodes));
+        }
+
+        void IBotDefaultCommands.List(long peerId, int storyId, int episodeId)
+        {
+            // Send episode stats
+            messageSender.Send(peerId,
+                messageBuilder.BuildEpisodeStats(stories.GetEpisode(storyId, episodeId),
+                saves.Get(peerId).GetStoryStats(storyId).Episodes[episodeId]));
+        }
+
+        void IBotDefaultCommands.Repeat(long peerId)
+        {
+            // Get save
+            var save = saves.Get(peerId);
+            if (save.Current.Story != null)
+            {
+                if (save.Current.Episode != null) // Default case
+                {
+                    var storylineElement = stories.GetEpisode(save.Current.Story.Value, save.Current.Episode.Value)
+                        .GetStoryline(save.Current.Storyline).Elements[save.Current.Position];
+                    messageSender.Send(peerId,
+                        messageBuilder.BuildContent(storylineElement, save.Current.Unlockables));
+                }
+                else // Episode select
+                {
+                    var episodes = stories.GetStoryEpisodes(save.Current.Story.Value);
+                    var stats = save.GetStoryStats(save.Current.Story.Value);
+
+                    messageSender.Send(peerId,
+                        messageBuilder.BuildEpisodeSelectDialog(episodes, stats));
+                }
+            }
+            else // Story select
+            {
+                messageSender.Send(peerId, messageBuilder.BuildStorySelectDialog(stories.GetAllPrologues()));
+            }
+        }
+
+        void IBotDefaultCommands.Select(long peerId)
+        {
+            // Reset progress
+            var save = saves.Get(peerId);
+            save.Current = new SaveProgress();
+            saves.Update(save);
+
+            // Send story select dialog
             messageSender.Send(peerId, messageBuilder.BuildStorySelectDialog(stories.GetAllPrologues()));
         }
+
+        #endregion
     }
 }
